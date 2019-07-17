@@ -12,6 +12,9 @@ import static java.util.stream.Collectors.joining;
  * total sales tax) and prints it.
  */
 public class OrderReceipt {
+    private static final String HEADER = "======Printing Orders======\n";
+    private static final String TAX_PREFIX = "Sales Tax\t";
+    private static final String TOTAL_AMOUNT_PREFIX = "Total Amount\t";
     private Order order;
 
     public OrderReceipt(Order order) {
@@ -21,33 +24,36 @@ public class OrderReceipt {
     public String printReceipt() {
         StringBuilder receipt = new StringBuilder();
 
-        // print headers
-        receipt.append("======Printing Orders======\n");
+        receipt.append(HEADER);
+        assembleBasicInfo(receipt);
+        assembleLineItems(receipt);
+        assembleTotalAndTax(receipt);
 
+        return receipt.toString();
+    }
+
+    private void assembleTotalAndTax(StringBuilder receipt) {
+        double totalAmount = calculateTotalAmount(order.getLineItems());
+        double totalSalesTax = totalAmount * 0.10;
+        double totalAmountWithTax = totalAmount + totalSalesTax;
+
+        receipt.append(TAX_PREFIX).append(totalSalesTax);
+        receipt.append(TOTAL_AMOUNT_PREFIX).append(totalAmountWithTax);
+    }
+
+    private void assembleLineItems(StringBuilder receipt) {
+        receipt.append(formatLineItems(order.getLineItems()));
+    }
+
+    private void assembleBasicInfo(StringBuilder receipt) {
         receipt.append(order.getCustomerName());
         receipt.append(order.getCustomerAddress());
+    }
 
-        // prints lineItems
-        double totalSalesTax = 0d;
-        double total = 0d;
-
-        receipt.append(formatLineItems(order.getLineItems()));
-
-        for (LineItem lineItem : order.getLineItems()) {
-            // calculate sales tax @ rate of 10%
-            double salesTax = lineItem.getTotalAmount() * 0.10;
-            totalSalesTax += salesTax;
-
-            // calculate total amount of lineItem = price * quantity + 10 % sales tax
-            total += lineItem.getTotalAmount() + salesTax;
-        }
-
-        // prints the state tax
-        receipt.append("Sales Tax").append('\t').append(totalSalesTax);
-
-        // print total amount
-        receipt.append("Total Amount").append('\t').append(total);
-        return receipt.toString();
+    private double calculateTotalAmount(List<LineItem> lineItems) {
+        return lineItems.stream()
+                .mapToDouble(LineItem::getTotalAmount)
+                .sum();
     }
 
     private String formatLineItems(List<LineItem> lineItems) {
